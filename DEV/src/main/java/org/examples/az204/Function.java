@@ -2,6 +2,7 @@ package org.examples.az204;
 
 import java.util.Optional;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.HttpMethod;
 import com.microsoft.azure.functions.HttpRequestMessage;
@@ -31,14 +32,22 @@ public class Function {
         context.getLogger().info("Java HTTP trigger processed a request.");
 
         // Parse query parameter
-    
-        final String query = request.getQueryParameters().get("name");
-        final String name = request.getBody().orElse(query);
 
-        if (name == null) {
+        final String body = request.getBody().orElse("");
+
+        if (body.isEmpty()){
             return request.createResponseBuilder(HttpStatus.BAD_REQUEST).body("Please pass a name on the query string or in the request body").build();
-        } else {
-            return request.createResponseBuilder(HttpStatus.OK).body("Hello, " + name).build();
         }
+
+        // If the request is a POST request, parse the body
+        Person person = null;
+
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            person = mapper.readValue(body, Person.class);
+            return request.createResponseBuilder(HttpStatus.OK).body("Hello, " + person.getName()).build();
+        } catch (Exception e) {
+            return request.createResponseBuilder(HttpStatus.BAD_REQUEST).body("Please pass a valid JSON object in the request body").build();
+       }
     }
 }
